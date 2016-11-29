@@ -15,6 +15,7 @@ namespace Crawler_serveme.BL.CW
             container.Register(Component.For<IManager>().ImplementedBy<Manager.Manager>().LifestyleTransient());
             container.Register(
                 Component.For<IBookingComManager>().ImplementedBy<BookingComManager>().LifestyleTransient());
+            container.Register(Component.For<IYelpComManager>().ImplementedBy<YelpComManager>().LifestyleTransient());
         }
     }
 }

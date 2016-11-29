@@ -13,7 +13,8 @@ namespace Crawler_serveme.Controller
 
         public void StartCrawler()
         {
-            _manager.GetInfoBookingComManager("");    
+            _manager.GetInfoYelpComManager("D:/");
+            //_manager.GetInfoBookingComManager("");    
         }
     }
 }

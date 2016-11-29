@@ -3,5 +3,6 @@
     public interface IManager
     {
         void GetInfoBookingComManager(string folder);
+        void GetInfoYelpComManager(string folder);
     }
 }

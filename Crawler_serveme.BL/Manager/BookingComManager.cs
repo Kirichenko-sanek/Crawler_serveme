@@ -1,9 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using Crawler_serveme.Core.Interfaces.Manager;
+﻿using Crawler_serveme.Core.Interfaces.Manager;
 using Crawler_serveme.Core.Interfaces.Repository;
 
 namespace Crawler_serveme.BL.Manager

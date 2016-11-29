@@ -5,6 +5,10 @@ VisualStudioVersion = 14.0.25123.0
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Crawler_serveme", "Crawler_serveme\Crawler_serveme.csproj", "{756561FD-E5FB-4287-8C4C-265936F25AE9}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Crawler_serveme.BL", "Crawler_serveme.BL\Crawler_serveme.BL.csproj", "{2E104B54-F816-43CF-B465-FF5076C7045A}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Crawler_serveme.Core", "Crawler_serveme.Core\Crawler_serveme.Core.csproj", "{315377EB-897C-47CC-87EE-423436D5DD01}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -15,6 +19,14 @@ Global
 		{756561FD-E5FB-4287-8C4C-265936F25AE9}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{756561FD-E5FB-4287-8C4C-265936F25AE9}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{756561FD-E5FB-4287-8C4C-265936F25AE9}.Release|Any CPU.Build.0 = Release|Any CPU
+		{2E104B54-F816-43CF-B465-FF5076C7045A}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{2E104B54-F816-43CF-B465-FF5076C7045A}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{2E104B54-F816-43CF-B465-FF5076C7045A}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{2E104B54-F816-43CF-B465-FF5076C7045A}.Release|Any CPU.Build.0 = Release|Any CPU
+		{315377EB-897C-47CC-87EE-423436D5DD01}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{315377EB-897C-47CC-87EE-423436D5DD01}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{315377EB-897C-47CC-87EE-423436D5DD01}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{315377EB-897C-47CC-87EE-423436D5DD01}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
