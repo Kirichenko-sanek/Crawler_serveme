@@ -49,6 +49,8 @@
     <Compile Include="Interfaces\Manager\IYelpComManager.cs" />
     <Compile Include="Interfaces\Repository\IRepository.cs" />
     <Compile Include="Model\Yelp\City.cs" />
+    <Compile Include="Model\Yelp\Contact.cs" />
+    <Compile Include="Model\Yelp\Info.cs" />
     <Compile Include="Model\Yelp\Place.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>

@@ -9,5 +9,8 @@ namespace Crawler_serveme.Core.Interfaces.Manager
         List<City> GetCity();
         List<Place> GetPlaces(string category, List<City> citys);
         List<string> GetAllCategory(string city, string category);
+        List<string> GetPages(string urlSearch);
+        List<Info> ParsePages(List<Place> places);
+        Contact GetPlaceContact(string place);
     }
 }
