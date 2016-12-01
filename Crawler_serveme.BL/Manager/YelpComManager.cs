@@ -5,6 +5,7 @@ using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using Crawler_serveme.Core.Interfaces.Manager;
 using Crawler_serveme.Core.Interfaces.Repository;
+using Crawler_serveme.Core.Interfaces.Service;
 using Crawler_serveme.Core.Model.Yelp;
 using HtmlAgilityPack;
 
@@ -13,43 +14,102 @@ namespace Crawler_serveme.BL.Manager
     public class YelpComManager : IYelpComManager
     {
         public string UrlSite = "https://www.yelp.com";
-        WebProxy myProxy = new WebProxy("31.193.129.158:80");
+        //WebProxy myProxy = new WebProxy("116.9.156.105:3123");
 
         private readonly IRepository _repository;
+        private readonly IProxy _proxy;
 
-        public YelpComManager(IRepository repository)
+        WebProxy myProxy = new WebProxy();
+
+        public YelpComManager(IRepository repository, IProxy proxy)
         {
             _repository = repository;
+            _proxy = proxy;
         }
+        
+
+        public string GetProxy()
+        {
+            return "";
+        }
+
 
         public void GetInfoYelpCom(string folder)
         {
+            myProxy = new WebProxy(_proxy.GetProxy());
             var city = GetCity();
-            var restaurants = GetPlaces("Nightlife", city);
-            var restaurantsInfo = ParsePages(restaurants);
+            if (city != null)
+            {
+                var nightlife = GetPlaces("Nightlife", city);
+                if (nightlife != null)
+                {
+                    var nightlifeInfo = ParsePages(nightlife);
+                    var nightlifeInfoStr = ConvertInfoToString(nightlifeInfo);
+                    _repository.WriteToFile(nightlifeInfoStr, "Nightlife", "D:\\Work\\Result");
+                }
 
+                myProxy = new WebProxy(_proxy.GetProxy());
+                var restaurants = GetPlaces("Restaurants", city);
+                if (restaurants != null)
+                {
+                    var restaurantsInfo = ParsePages(restaurants);
+                    var restaurantsInfoStr = ConvertInfoToString(restaurantsInfo);
+                    _repository.WriteToFile(restaurantsInfoStr, "Restaurants", "D:\\Work\\Result");
+                }
+
+                myProxy = new WebProxy(_proxy.GetProxy());
+                var hotelstravel = GetPlaces("Hotelstravel", city);
+                if (hotelstravel != null)
+                {
+                    var hotelstravelInfo = ParsePages(hotelstravel);
+                    var hotelstravelInfoStr = ConvertInfoToString(hotelstravelInfo);
+                    _repository.WriteToFile(hotelstravelInfoStr, "Hotelstravel", "D:\\Work\\Result");
+                }
+            }
         }
 
         public List<City> GetCity()
         {
+
             var cityList = new List<City>();
             
             var wClientStart = new WebClient();
-            var htmlStart = new HtmlDocument();
-            
+            var htmlStart = new HtmlDocument();  
             wClientStart.Proxy = myProxy;
-            htmlStart.LoadHtml(wClientStart.DownloadString(UrlSite + "/locations"));
-
-            var city = htmlStart.DocumentNode.SelectNodes("//ul[@class='cities']/li/a");
-            Parallel.ForEach(city, item =>
+            try
             {
-                var oneCity = new City
+                htmlStart.LoadHtml(wClientStart.DownloadString(UrlSite + "/locations"));
+            }
+            catch (WebException e)
+            {
+                if (e.Message.Contains("503"))
                 {
-                    CityName = item.InnerText,
-                    Url = item.GetAttributeValue("href", "") ?? " "
-                };
-                cityList.Add(oneCity);
-            });
+                    myProxy = new WebProxy(_proxy.GetProxy());
+                    wClientStart.Proxy = myProxy;
+                    htmlStart.LoadHtml(wClientStart.DownloadString(UrlSite + "/locations"));
+                }
+                else
+                {
+                    Console.WriteLine("");
+                }
+            }
+            catch (Exception e)
+            {
+                cityList.Clear();
+            }
+            var city = htmlStart.DocumentNode.SelectNodes("//ul[@class='cities']/li/a");
+            if (city != null)
+            {
+                Parallel.ForEach(city, item =>
+                {
+                    var oneCity = new City
+                    {
+                        CityName = item.InnerText,
+                        Url = item.GetAttributeValue("href", "") ?? " "
+                    };
+                    cityList.Add(oneCity);
+                });
+            }
 
             return cityList;
         }
@@ -59,29 +119,44 @@ namespace Crawler_serveme.BL.Manager
             var placeList = new List<Place>();
             Parallel.ForEach(cityList, city =>
             {
-                var categoryList = GetAllCategory(city.CityName, category);
-                if (categoryList.Count == 0)
+                try
                 {
-                    return;
-                }
-                Parallel.ForEach(categoryList, item =>
-                {
-                    var pages = GetPages(UrlSite + item);
-                    if (pages.Count == 0)
+                    var categoryList = GetAllCategory(city.CityName, category);
+                    if (categoryList.Count == 0)
                     {
                         return;
                     }
-                    foreach (var page in pages)
+                    Parallel.ForEach(categoryList, item =>
                     {
-                        var place = new Place
+                        try
                         {
-                            City = city.CityName,
-                            Category = category,
-                            Url = page
-                        };
-                        placeList.Add(place);
-                    }
-                });
+                            var pages = GetPages(UrlSite + item);
+                            if (pages.Count == 0)
+                            {
+                                return;
+                            }
+                            foreach (var page in pages)
+                            {
+                                var place = new Place
+                                {
+                                    City = city.CityName,
+                                    Category = category,
+                                    Url = page
+                                };
+                                placeList.Add(place);
+                            }
+                        }
+                        catch (Exception)
+                        {
+                            return;
+                        }               
+                    });
+                }
+                catch (Exception)
+                {
+                    return;
+                }
+               
             });
             //var allCategorys = GetAllCategory(city, category);
             //Parallel.ForEach(allCategorys, item =>
@@ -100,16 +175,31 @@ namespace Crawler_serveme.BL.Manager
 
         public List<string> GetAllCategory(string city, string category)
         {
-            
+            //myProxy = new WebProxy(_proxy.GetProxy());
             var wClientStart = new WebClient();
             wClientStart.Proxy = myProxy;
             var htmlStart = new HtmlDocument();
             var result = new List<string>();
             try
             {
-                htmlStart.LoadHtml(
-                wClientStart.DownloadString(UrlSite + "/search?cflt=" + category + "&find_loc=" +
-                                            city.Replace("/", "")));
+                try
+                {
+                    htmlStart.LoadHtml(
+                        wClientStart.DownloadString(UrlSite + "/search?cflt=" + category + "&find_loc=" +
+                                                    city.Replace("/", "")));
+                }
+                catch (WebException e)
+                {
+                    if (e.Message.Contains("503"))
+                    {
+                        myProxy = new WebProxy(_proxy.GetProxy());
+                        wClientStart.Proxy = myProxy;
+                        htmlStart.LoadHtml(
+                            wClientStart.DownloadString(UrlSite + "/search?cflt=" + category + "&find_loc=" +
+                                                        city.Replace("/", "")));
+                    }
+                }
+
                 var allCategorys = htmlStart.DocumentNode.SelectNodes("//div[@class='all-category-browse-links']/ul/li/a");
                 Parallel.ForEach(allCategorys, item =>
                 {
@@ -136,10 +226,23 @@ namespace Crawler_serveme.BL.Manager
         {
             try
             {
+                //myProxy = new WebProxy(_proxy.GetProxy());
                 var wClientStart = new WebClient();
                 wClientStart.Proxy = myProxy;
                 var htmlStart = new HtmlDocument();
-                htmlStart.LoadHtml(wClientStart.DownloadString(url));
+                try
+                {
+                    htmlStart.LoadHtml(wClientStart.DownloadString(url));
+                }
+                catch (WebException e)
+                {
+                    if (e.Message.Contains("503"))
+                    {
+                        myProxy = new WebProxy(_proxy.GetProxy());
+                        wClientStart.Proxy = myProxy;
+                        htmlStart.LoadHtml(wClientStart.DownloadString(url));
+                    }
+                }
                 var cout =
                     Convert.ToInt32(
                         htmlStart.DocumentNode.SelectSingleNode(
@@ -166,6 +269,7 @@ namespace Crawler_serveme.BL.Manager
                 else
                 {
                     elementList.Clear();
+                    //myProxy = new WebProxy(_proxy.GetProxy());
                     Parallel.For(0, cout - 1, i =>
                     {
                         using (var wClient = new WebClient())
@@ -176,6 +280,20 @@ namespace Crawler_serveme.BL.Manager
                             {
                                 html.LoadHtml(
                                     wClient.DownloadString(urlSearch + "start=" + (i*10)));
+                            }
+                            catch (WebException e)
+                            {
+                                if (e.Message.Contains("503"))
+                                {
+                                    myProxy = new WebProxy(_proxy.GetProxy());
+                                    wClient.Proxy = myProxy;
+                                    html.LoadHtml(
+                                        wClient.DownloadString(urlSearch + "start=" + (i*10)));
+                                }
+                                else
+                                {
+                                    return;
+                                }
                             }
                             catch (Exception)
                             {
@@ -206,7 +324,7 @@ namespace Crawler_serveme.BL.Manager
         public List<Info> ParsePages(List<Place> places)
         {
             var infoList = new List<Info>();
-
+            //myProxy = new WebProxy(_proxy.GetProxy());
             Parallel.ForEach(places, item =>
             {
                 using (var wClient = new WebClient())
@@ -218,6 +336,26 @@ namespace Crawler_serveme.BL.Manager
                     {
                         htmlInfo.LoadHtml(wClient.DownloadString(item.Url));
                     }
+                    catch (WebException e)
+                    {
+                        try
+                        {
+                            if (e.Message.Contains("503"))
+                            {
+                                myProxy = new WebProxy(_proxy.GetProxy());
+                                wClient.Proxy = myProxy;
+                                htmlInfo.LoadHtml(wClient.DownloadString(item.Url));
+                            }
+                            else
+                            {
+                                return;
+                            }
+                        }
+                        catch (Exception)
+                        {
+                            return;
+                        }       
+                    }
                     catch (Exception e)
                     {
                         return;
@@ -228,27 +366,33 @@ namespace Crawler_serveme.BL.Manager
                     information.Url = item.Url;
 
                     information.Name =
-                        htmlInfo.DocumentNode.SelectSingleNode("//div[@class='u-space-t1']/h1")?
-                            .InnerText.Replace(",", ".") ?? " ";
+                        htmlInfo.DocumentNode.SelectSingleNode("//h1[@class='biz-page-title embossed-text-white']")?
+                            .InnerText.Trim().Replace(",", ".") ?? " ";
+
+                    information.Address = htmlInfo.DocumentNode.SelectSingleNode("//address")?
+                        .InnerText.Replace(",", ".").Trim().Replace("\n", "") ?? " ";
 
                     var url =
                         htmlInfo.DocumentNode.SelectSingleNode("//span[@class='biz-website js-add-url-tagging']/a")?
                             .InnerText ?? " ";
-                    if (url != " ")
+                    if (url == " ")
                     {
-                        information.PlaceUrl = "http://" + url;
-                        var contact = GetPlaceContact("http://" + url);
-                        information.Email = contact.Email;
-                        var phone = contact.Tel;
-                        information.Tel = phone == " "
-                            ? (htmlInfo.DocumentNode.SelectSingleNode("//span[@class='biz-phone']")?.InnerText ?? " ")
-                            : phone;
+                        information.Tel =
+                            htmlInfo.DocumentNode.SelectSingleNode("//span[@class='biz-phone']")?
+                                .InnerText
+                                .Replace("\n", "") ?? " ";
+                        information.PlaceUrl = " ";
+                        information.Email = " ";
                     }
                     else
                     {
-                        information.Tel =
-                            htmlInfo.DocumentNode.SelectSingleNode("//span[@class='biz-phone']")?.InnerText ?? " ";
-                        information.PlaceUrl = " ";
+                        information.PlaceUrl = "http://" + url;
+                        var contact = GetPlaceContact("http://" + url);
+                        information.Email = contact.Email.Trim().Replace("\n", "");
+                        var phone = contact.Tel.Trim().Replace("\n", "");
+                        information.Tel = phone == " "
+                            ? (htmlInfo.DocumentNode.SelectSingleNode("//span[@class='biz-phone']")?.InnerText.Replace("\n", "") ?? " ")
+                            : phone;
                     }
                     infoList.Add(information);
 
@@ -272,7 +416,7 @@ namespace Crawler_serveme.BL.Manager
                     wClientOrganizer.Headers.Add("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/54.0.2840.71 Safari/537.36");
                     wClientOrganizer.Headers.Add("Content-Type", "text/html, charset=utf-8");
                     wClientOrganizer.Headers.Add("Accept", "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8");
-                    wClientOrganizer.Proxy = myProxy;
+                    //wClientOrganizer.Proxy = myProxy;
                     var htmlOrganizer = new HtmlDocument();
                     var regexEmail = new Regex(@"\b[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,6}\b");
                     var regexTel =
@@ -344,7 +488,7 @@ namespace Crawler_serveme.BL.Manager
                                 wClientContact.Headers.Add("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/54.0.2840.71 Safari/537.36");
                                 wClientContact.Headers.Add("Content-Type", "text/html, charset=utf-8");
                                 wClientContact.Headers.Add("Accept", "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8");
-                                wClientContact.Proxy = myProxy;
+                                //wClientContact.Proxy = myProxy;
                                 var htmlContact = new HtmlDocument();
                                 foreach (var cout in str)
                                 {
@@ -412,6 +556,48 @@ namespace Crawler_serveme.BL.Manager
                 };
                 return result;
             }
+        }
+
+        public string ConvertInfoToString(List<Info> info)
+        {
+            System.Text.StringBuilder theBuilder = new System.Text.StringBuilder();
+            theBuilder.Append("City");
+            theBuilder.Append(",");
+            theBuilder.Append("Category");
+            theBuilder.Append(",");
+            theBuilder.Append("Name");
+            theBuilder.Append(",");
+            theBuilder.Append("Tel");
+            theBuilder.Append(",");
+            theBuilder.Append("Email");
+            theBuilder.Append(",");
+            theBuilder.Append("Address");
+            theBuilder.Append(",");
+            theBuilder.Append("Yelp url");
+            theBuilder.Append(",");
+            theBuilder.Append("Plase url");
+            theBuilder.Append("\n");
+            foreach (var item in info)
+            {
+                theBuilder.Append(item.City);
+                theBuilder.Append(",");
+                theBuilder.Append(item.Category);
+                theBuilder.Append(",");
+                theBuilder.Append(item.Name);
+                theBuilder.Append(",");
+                theBuilder.Append(item.Tel);
+                theBuilder.Append(",");
+                theBuilder.Append(item.Email);
+                theBuilder.Append(",");
+                theBuilder.Append(item.Address);
+                theBuilder.Append(",");
+                theBuilder.Append(item.Url);
+                theBuilder.Append(",");
+                theBuilder.Append(item.PlaceUrl);
+                theBuilder.Append("\n");
+
+            }
+            return theBuilder.ToString();
         }
 
     }
