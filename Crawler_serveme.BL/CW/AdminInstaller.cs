@@ -2,8 +2,10 @@
 using Castle.MicroKernel.SubSystems.Configuration;
 using Castle.Windsor;
 using Crawler_serveme.BL.Manager;
+using Crawler_serveme.BL.Service;
 using Crawler_serveme.Core.Interfaces.Manager;
 using Crawler_serveme.Core.Interfaces.Repository;
+using Crawler_serveme.Core.Interfaces.Service;
 
 namespace Crawler_serveme.BL.CW
 {
@@ -12,10 +14,12 @@ namespace Crawler_serveme.BL.CW
         public void Install(IWindsorContainer container, IConfigurationStore store)
         {
             container.Register(Component.For<IRepository>().ImplementedBy<Repository.Repository>().LifestyleTransient());
+            container.Register(Component.For<IProxy>().ImplementedBy<Proxy>().LifestyleTransient());
             container.Register(Component.For<IManager>().ImplementedBy<Manager.Manager>().LifestyleTransient());
             container.Register(
                 Component.For<IBookingComManager>().ImplementedBy<BookingComManager>().LifestyleTransient());
             container.Register(Component.For<IYelpComManager>().ImplementedBy<YelpComManager>().LifestyleTransient());
+            
         }
     }
 }

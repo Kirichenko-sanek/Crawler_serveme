@@ -5,6 +5,7 @@ namespace Crawler_serveme.Core.Interfaces.Manager
 {
     public interface IYelpComManager
     {
+        string GetProxy();
         void GetInfoYelpCom(string folder);
         List<City> GetCity();
         List<Place> GetPlaces(string category, List<City> citys);
